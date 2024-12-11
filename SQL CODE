@@ -1,0 +1,98 @@
+--Total rides by users
+SELECT user_type,
+COUNT(*) AS  count_type
+FROM CyclistBikeShare
+GROUP BY user_type;
+
+--user percentage
+SELECT user_type,
+COUNT(*) AS count_type,
+(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM CyclistBikeShare)) AS percentage
+FROM CyclistBikeShare
+GROUP BY user_type;
+
+--Average ride duration
+SELECT user_type,
+ AVG(duration_minutes) AS avg_duration
+FROM CyclistBikeShare
+WHERE duration_minutes >1
+GROUP BY user_type;
+
+-- Top 5 start stations for casual
+SELECT TOP 5
+user_type,
+start_station_name,
+COUNT(ride_id) AS ride_count
+FROM CyclistBikeShare
+WHERE user_type = 'casual'
+GROUP BY user_type, start_station_name
+ORDER BY ride_count DESC;
+
+-- Top 5 end stations
+SELECT TOP 5
+user_type, 
+end_station_name,
+COUNT(ride_id) AS ride_count
+FROM CyclistBikeShare
+GROUP BY user_type, end_station_name
+ORDER BY ride_count DESC;
+
+--rideable types used by casual riders vs annual members
+SELECT  user_type,
+rideable_type,
+COUNT(ride_id) AS ride_count
+FROM CyclistBikeShare
+GROUP BY user_type, rideable_type
+ORDER BY ride_count DESC;
+
+--Peak usage hour by usertype
+WITH timeofday AS (
+SELECT user_type, DATEPART(HOUR, started_at) AS hour_of_day,
+COUNT(ride_id) AS ride_count,
+ROW_NUMBER() OVER (PARTITION BY user_type ORDER BY COUNT(ride_id) DESC) AS row_num
+FROM CyclistBikeShare
+GROUP BY user_type, DATEPART(HOUR, started_at)
+)
+SELECT user_type,
+hour_of_day,
+ride_count
+FROM timeofday
+WHERE row_num = 1;
+
+--Casual users analysis
+SELECT user_type,
+COUNT(ride_id) AS total_rides,
+AVG(duration_minutes) AS avg_duration_minutes,
+MAX(duration_minutes) AS longest_ride_duration
+FROM CyclistBikeShare
+WHERE user_type = 'Casual'
+AND duration_minutes >= 1
+GROUP BY user_type
+ORDER BY total_rides DESC;
+
+-- total number of trips by month over time
+SELECT YEAR(started_at) AS year,
+MONTH(started_at) AS month,
+COUNT(ride_id) AS total_trips
+FROM CyclistBikeShare
+GROUP BY YEAR(started_at), MONTH(started_at)
+ORDER BY year ASC, month ASC;
+
+	-- Number of trips for each user type per quarter
+SELECT YEAR(started_at) AS year,
+DATEPART(QUARTER, started_at) AS quarter,
+user_type,
+COUNT(ride_id) AS total_trips
+FROM CyclistBikeShare
+GROUP BY YEAR(started_at), 
+DATEPART(QUARTER, started_at), 
+user_type
+ORDER BY year ASC, quarter ASC, user_type;
+
+
+
+--  total trip duration for all trips
+SELECT SUM(duration_minutes) AS total_trip_duration_minutes
+FROM CyclistBikeShare;
+
+
